@@ -90,8 +90,8 @@
       // Default Tanggal Tutup Countdown (Bisa diatur admin dari dashboard)
       PO_CLOSE_DATE: "2026-11-20T23:59:59",
       
-      // Default Foto QRIS (Bisa diatur admin dari dashboard)
-      QRIS_IMAGE_URL: "", 
+      // Foto QRIS: Kamu bisa langsung ubah dari kode di sini (contoh: "qris.jpg" atau link URL https://...)
+      QRIS_IMAGE_URL: "qris.jpeg", 
 
       // URL Web App Google Apps Script hasil deploy (Database Google Sheets)
       API_URL: "https://script.google.com/macros/s/AKfycbyd8odu1Myc05Q_pSci5cKZCUEXJqicNlfwbXYaAh1t9Jk2RZkGp8rU6AP4jGKa9by2lQ/exec"
@@ -322,12 +322,12 @@
 
                 <!-- Foto QR Code QRIS (Custom URL atau Standar SVG) -->
                 <div class="bg-brand-bg border-2 border-black rounded-xl p-3 flex items-center justify-center aspect-square relative overflow-hidden">
-                  <template x-if="activeQrisUrl && activeQrisUrl.trim() !== ''">
-                    <img :src="activeQrisUrl" alt="Foto QRIS Pembayaran" class="w-full h-full object-contain" />
+                  <template x-if="activeQrisUrl && activeQrisUrl.trim() !== '' && !qrisImageError">
+                    <img :src="activeQrisUrl" @error="qrisImageError = true" alt="Foto QRIS Pembayaran" class="w-full h-full object-contain" />
                   </template>
 
-                  <!-- Default High-Quality Standar QRIS Visual Graphics -->
-                  <template x-if="!activeQrisUrl || activeQrisUrl.trim() === ''">
+                  <!-- Default High-Quality Standar QRIS Visual Graphics (Tampil jika foto kosong / file belum ada) -->
+                  <template x-if="!activeQrisUrl || activeQrisUrl.trim() === '' || qrisImageError">
                     <svg viewBox="0 0 160 160" class="w-full h-full text-black">
                       <rect x="10" y="10" width="40" height="40" fill="none" stroke="#000" stroke-width="8"/>
                       <rect x="22" y="22" width="16" height="16" fill="#000"/>
@@ -638,8 +638,9 @@
         targetCloseDate: CONFIG.PO_CLOSE_DATE,
         countdown: { days: '00', hours: '00', minutes: '00', seconds: '00' },
 
-        // QRIS Image Aktif (Sinkron dari Admin/localStorage/Config)
+        // QRIS Image Aktif & Error Handler
         activeQrisUrl: CONFIG.QRIS_IMAGE_URL,
+        qrisImageError: false,
 
         // Nominal Harga Aktif (Sinkron dari Admin/localStorage/Config)
         activeNominal: CONFIG.NOMINAL_DEFAULT,
@@ -655,24 +656,30 @@
         whatsappReceiptUrl: '',
 
         async init() {
-          // 1. Muat Pengaturan dari LocalStorage (jika diatur lewat admin.html di browser yang sama)
+          // Prioritas Foto QRIS: Jika diatur di kode CONFIG, langsung gunakan dari kode
+          if (CONFIG.QRIS_IMAGE_URL && CONFIG.QRIS_IMAGE_URL.trim() !== '') {
+            this.activeQrisUrl = CONFIG.QRIS_IMAGE_URL;
+          } else {
+            const savedQris = localStorage.getItem('losclasicos_qris');
+            if (savedQris) {
+              this.activeQrisUrl = savedQris;
+            }
+          }
+
+          // Muat Pengaturan Tanggal Countdown & Nominal
           const savedCountdown = localStorage.getItem('losclasicos_countdown');
           if (savedCountdown) {
             this.targetCloseDate = savedCountdown;
-          }
-          const savedQris = localStorage.getItem('losclasicos_qris');
-          if (savedQris) {
-            this.activeQrisUrl = savedQris;
           }
           const savedNominal = localStorage.getItem('losclasicos_nominal');
           if (savedNominal) {
             this.activeNominal = Number(savedNominal) || CONFIG.NOMINAL_DEFAULT;
           }
 
-          // 2. Coba fetch pengaturan terbaru dari Google Apps Script jika API_URL sudah diset
+          // Coba fetch pengaturan terbaru dari Google Apps Script jika API_URL sudah diset
           this.fetchRemoteSettings();
 
-          // 3. Jalankan countdown timer per detik
+          // Jalankan countdown timer per detik
           this.updateCountdown();
           setInterval(() => {
             this.updateCountdown();
@@ -688,7 +695,8 @@
               if (json.countdownDate) {
                 this.targetCloseDate = json.countdownDate;
               }
-              if (json.qrisUrl !== undefined) {
+              // Hanya timpa dari server jika di kode CONFIG kosong
+              if ((!CONFIG.QRIS_IMAGE_URL || CONFIG.QRIS_IMAGE_URL.trim() === '') && json.qrisUrl) {
                 this.activeQrisUrl = json.qrisUrl;
               }
               if (json.nominal) {
