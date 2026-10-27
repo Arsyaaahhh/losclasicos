@@ -128,15 +128,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <a href="admin.html" target="_blank"
-             class="btn-brutal bg-white hover:bg-brand-pink border-2 border-black px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow-brutal-sm">
-            <span>⚙️</span>
-            <span class="hidden sm:inline">Admin</span>
-          </a>
           <a :href="'https://wa.me/' + CONFIG.WA_NUMBER" target="_blank" 
              class="btn-brutal bg-white hover:bg-brand-yellow border-2 border-black px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-brutal-sm">
             <span>💬</span>
-            <span class="hidden sm:inline">Bantuan</span>
+            <span class="hidden sm:inline">Bantuan Admin</span>
           </a>
         </div>
       </div>
@@ -377,7 +372,7 @@
             <div class="md:col-span-6 space-y-4">
               <div class="bg-brand-bg border-3 border-black rounded-2xl p-4 shadow-brutal-sm">
                 <span class="text-xs font-bold text-gray-600 uppercase">Nominal Pembayaran:</span>
-                <div class="font-display text-3xl sm:text-4xl text-black my-1" x-text="formatRupiah(CONFIG.NOMINAL_DEFAULT)">
+                <div class="font-display text-3xl sm:text-4xl text-black my-1" x-text="formatRupiah(activeNominal)">
                   Rp 25.000
                 </div>
                 <div class="text-xs font-bold text-gray-800" x-text="CONFIG.NOMINAL_LABEL"></div>
@@ -392,7 +387,7 @@
                   <li>Buka aplikasi m-Banking atau E-Wallet (BCA Mobile, GoPay, OVO, Dana, dll).</li>
                   <li>Pilih menu <strong>Scan QR / QRIS</strong>.</li>
                   <li>Scan foto QRIS di samping atau screenshot layar ini.</li>
-                  <li>Masukkan nominal <strong><span x-text="formatRupiah(CONFIG.NOMINAL_DEFAULT)"></span></strong> dan bayar.</li>
+                  <li>Masukkan nominal <strong><span x-text="formatRupiah(activeNominal)"></span></strong> dan bayar.</li>
                   <li>Screenshot atau simpan bukti transfer untuk diupload di bawah.</li>
                 </ol>
               </div>
@@ -567,11 +562,11 @@
           <div class="pt-2 border-t-2 border-black space-y-2">
             <div class="flex justify-between items-center text-xs text-gray-600">
               <span x-text="CONFIG.NOMINAL_LABEL"></span>
-              <span class="font-mono font-bold" x-text="formatRupiah(CONFIG.NOMINAL_DEFAULT)"></span>
+              <span class="font-mono font-bold" x-text="formatRupiah(receiptData.totalHarga)"></span>
             </div>
             <div class="flex justify-between items-center font-display text-lg sm:text-xl text-black pt-2 border-t border-dashed border-gray-300">
               <span>TOTAL DIBAYAR</span>
-              <span class="text-black" x-text="formatRupiah(CONFIG.NOMINAL_DEFAULT)"></span>
+              <span class="text-black" x-text="formatRupiah(receiptData.totalHarga)"></span>
             </div>
           </div>
 
@@ -646,6 +641,9 @@
         // QRIS Image Aktif (Sinkron dari Admin/localStorage/Config)
         activeQrisUrl: CONFIG.QRIS_IMAGE_URL,
 
+        // Nominal Harga Aktif (Sinkron dari Admin/localStorage/Config)
+        activeNominal: CONFIG.NOMINAL_DEFAULT,
+
         receiptData: {
           id: '',
           nama: '',
@@ -665,6 +663,10 @@
           const savedQris = localStorage.getItem('losclasicos_qris');
           if (savedQris) {
             this.activeQrisUrl = savedQris;
+          }
+          const savedNominal = localStorage.getItem('losclasicos_nominal');
+          if (savedNominal) {
+            this.activeNominal = Number(savedNominal) || CONFIG.NOMINAL_DEFAULT;
           }
 
           // 2. Coba fetch pengaturan terbaru dari Google Apps Script jika API_URL sudah diset
@@ -688,6 +690,9 @@
               }
               if (json.qrisUrl !== undefined) {
                 this.activeQrisUrl = json.qrisUrl;
+              }
+              if (json.nominal) {
+                this.activeNominal = Number(json.nominal);
               }
             }
           } catch(e) {
@@ -792,7 +797,7 @@
             wa: this.form.wa.trim(),
             kataKata: this.form.kataKata.trim(),
             waktuFormatted: formattedDate,
-            totalHarga: CONFIG.NOMINAL_DEFAULT
+            totalHarga: this.activeNominal
           };
 
           const payload = {
@@ -801,7 +806,7 @@
             nama: this.receiptData.nama,
             wa: this.receiptData.wa,
             kataKata: this.receiptData.kataKata,
-            nominal: CONFIG.NOMINAL_DEFAULT,
+            nominal: this.activeNominal,
             buktiBayarBase64: this.receiptPreview,
             status: 'Sudah Bayar'
           };
@@ -813,7 +818,7 @@
             `*Nama:* ${this.receiptData.nama}`,
             `*WhatsApp:* ${this.receiptData.wa}`,
             `*Kata-Kata Hari Ini:* "${this.receiptData.kataKata}"`,
-            `*Nominal Dibayar:* ${this.formatRupiah(CONFIG.NOMINAL_DEFAULT)}`,
+            `*Nominal Dibayar:* ${this.formatRupiah(this.activeNominal)}`,
             `*Waktu:* ${formattedDate}`,
             ``,
             `Bukti transfer sudah saya upload di web dan saya simpan struknya. Mohon dikonfirmasi ya min. Terima kasih!`

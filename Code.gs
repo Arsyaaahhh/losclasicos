@@ -190,13 +190,14 @@ function doGet(e) {
     var action = params.action || "list";
     var token = params.token || "";
     
-    // AKSI 1: Publik - Ambil Pengaturan Aktif (Countdown & Foto QRIS)
+    // AKSI 1: Publik - Ambil Pengaturan Aktif (Countdown, Foto QRIS, dan Harga)
     if (action === "get_settings") {
       var props = PropertiesService.getScriptProperties();
       return createJsonResponse({
         status: "success",
         countdownDate: props.getProperty("COUNTDOWN_DATE") || "",
-        qrisUrl: props.getProperty("QRIS_URL") || ""
+        qrisUrl: props.getProperty("QRIS_URL") || "",
+        nominal: Number(props.getProperty("NOMINAL")) || 25000
       });
     }
 
@@ -209,7 +210,7 @@ function doGet(e) {
       });
     }
     
-    // AKSI 2: Admin - Simpan Pengaturan (Countdown & Foto QRIS)
+    // AKSI 2: Admin - Simpan Pengaturan (Countdown, Foto QRIS, dan Harga)
     if (action === "save_settings") {
       var props = PropertiesService.getScriptProperties();
       if (params.countdownDate) {
@@ -218,9 +219,12 @@ function doGet(e) {
       if (params.qrisUrl !== undefined) {
         props.setProperty("QRIS_URL", params.qrisUrl);
       }
+      if (params.nominal) {
+        props.setProperty("NOMINAL", String(params.nominal));
+      }
       return createJsonResponse({
         status: "success",
-        message: "Pengaturan countdown & QRIS berhasil disimpan di server!"
+        message: "Pengaturan countdown, QRIS & harga berhasil disimpan di server!"
       });
     }
 
