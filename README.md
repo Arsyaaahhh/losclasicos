@@ -16,6 +16,30 @@ d:/pesen/
 
 ---
 
+## ⚡ CARA UBAH HARGA, COUNTDOWN & QRIS LEWAT KODE (`index.html`)
+
+Buka file [index.html](file:///d:/pesen/index.html), pada bagian paling atas (baris 80-100) terdapat blok variabel `CONFIG`:
+
+```javascript
+const CONFIG = {
+  // 1. HARGA & NOMINAL PEMBAYARAN
+  NOMINAL_DEFAULT: 25000,                       // Ubah nominal di sini (contoh: 25000 = Rp 25.000)
+  NOMINAL_LABEL: "Paket Sticker & Custom Quotes",
+
+  // 2. WAKTU TUTUP PRE-ORDER (COUNTDOWN)
+  // Format: YYYY-MM-DDTHH:mm:ss
+  PO_CLOSE_DATE: "2026-11-20T23:59:59",
+
+  // 3. FOTO / GAMBAR QRIS PEMBAYARAN
+  // Bisa file lokal di folder yang sama (contoh: "qris.jpeg", "qris.jpg", "qris.png")
+  // atau link gambar online ("https://...")
+  QRIS_IMAGE_URL: "qris.jpeg", 
+};
+```
+Cukup simpan file `index.html` dan refresh browser, perubahan langsung aktif!
+
+---
+
 ## ✨ FITUR UTAMA TERBARU
 
 ### 1. Countdown Waktu Pemesanan Lucu (`index.html`)

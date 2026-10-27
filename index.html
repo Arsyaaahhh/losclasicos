@@ -74,26 +74,32 @@
 
 <body class="bg-brand-bg text-black font-body min-h-screen selection:bg-brand-yellow selection:text-black">
 
-  <!-- ==========================================
-       CONFIG DATA TOKO & PEMBAYARAN
-       ========================================== -->
+  <!-- ==============================================================
+       PENGATURAN UTAMA TOKO (UBAH LANGSUNG DARI KODE DI SINI)
+       ============================================================== -->
   <script>
     const CONFIG = {
+      // 1. HARGA & NOMINAL PEMBAYARAN
+      NOMINAL_DEFAULT: 15000,                       // Ubah harga di sini (contoh: 25000 = Rp 25.000)
+      NOMINAL_LABEL: "Paket Sticker & Custom Quotes", // Keterangan paket
+
+      // 2. WAKTU TUTUP PRE-ORDER (COUNTDOWN)
+      // Format: YYYY-MM-DDTHH:mm:ss (Tahun-Bulan-TanggalTHour:Menit:Detik)
+      PO_CLOSE_DATE: "2026-10-28T23:59:00",
+
+      // 3. FOTO / GAMBAR QRIS PEMBAYARAN
+      // Bisa file gambar di folder yang sama (contoh: "qris.jpeg", "qris.jpg", "qris.png")
+      // atau link URL gambar online ("https://...")
+      QRIS_IMAGE_URL: "qris.jpeg", 
+
+      // INFORMASI BRAND & TOKO
       BRAND_NAME: "losclasicos",
       MERCHANT_NAME: "losclasicos Official",
       NMID: "ID1020304050607",
       TAGLINE: "Ekspresikan Harimu Lewat Sticker & Kata-Kata Pilihan",
-      NOMINAL_DEFAULT: 25000,
-      NOMINAL_LABEL: "Paket Sticker & Custom Quotes",
-      WA_NUMBER: "6281234567890",
-      
-      // Default Tanggal Tutup Countdown (Bisa diatur admin dari dashboard)
-      PO_CLOSE_DATE: "2026-11-20T23:59:59",
-      
-      // Foto QRIS: Kamu bisa langsung ubah dari kode di sini (contoh: "qris.jpg" atau link URL https://...)
-      QRIS_IMAGE_URL: "qris.jpeg", 
+      WA_NUMBER: "6287877174156",
 
-      // URL Web App Google Apps Script hasil deploy (Database Google Sheets)
+      // URL Web App Google Apps Script (Database Google Sheets & Upload Drive)
       API_URL: "https://script.google.com/macros/s/AKfycbyd8odu1Myc05Q_pSci5cKZCUEXJqicNlfwbXYaAh1t9Jk2RZkGp8rU6AP4jGKa9by2lQ/exec"
     };
   </script>
@@ -656,56 +662,16 @@
         whatsappReceiptUrl: '',
 
         async init() {
-          // Prioritas Foto QRIS: Jika diatur di kode CONFIG, langsung gunakan dari kode
-          if (CONFIG.QRIS_IMAGE_URL && CONFIG.QRIS_IMAGE_URL.trim() !== '') {
-            this.activeQrisUrl = CONFIG.QRIS_IMAGE_URL;
-          } else {
-            const savedQris = localStorage.getItem('losclasicos_qris');
-            if (savedQris) {
-              this.activeQrisUrl = savedQris;
-            }
-          }
-
-          // Muat Pengaturan Tanggal Countdown & Nominal
-          const savedCountdown = localStorage.getItem('losclasicos_countdown');
-          if (savedCountdown) {
-            this.targetCloseDate = savedCountdown;
-          }
-          const savedNominal = localStorage.getItem('losclasicos_nominal');
-          if (savedNominal) {
-            this.activeNominal = Number(savedNominal) || CONFIG.NOMINAL_DEFAULT;
-          }
-
-          // Coba fetch pengaturan terbaru dari Google Apps Script jika API_URL sudah diset
-          this.fetchRemoteSettings();
+          // Harga, Countdown, dan Foto QRIS sepenuhnya dikontrol lewat KODE CONFIG di atas
+          this.activeQrisUrl = CONFIG.QRIS_IMAGE_URL;
+          this.targetCloseDate = CONFIG.PO_CLOSE_DATE;
+          this.activeNominal = Number(CONFIG.NOMINAL_DEFAULT) || 25000;
 
           // Jalankan countdown timer per detik
           this.updateCountdown();
           setInterval(() => {
             this.updateCountdown();
           }, 1000);
-        },
-
-        async fetchRemoteSettings() {
-          if (!CONFIG.API_URL || CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) return;
-          try {
-            const res = await fetch(`${CONFIG.API_URL}?action=get_settings`);
-            const json = await res.json();
-            if (json.status === 'success') {
-              if (json.countdownDate) {
-                this.targetCloseDate = json.countdownDate;
-              }
-              // Hanya timpa dari server jika di kode CONFIG kosong
-              if ((!CONFIG.QRIS_IMAGE_URL || CONFIG.QRIS_IMAGE_URL.trim() === '') && json.qrisUrl) {
-                this.activeQrisUrl = json.qrisUrl;
-              }
-              if (json.nominal) {
-                this.activeNominal = Number(json.nominal);
-              }
-            }
-          } catch(e) {
-            // Abaikan jika offline, tetap gunakan default / localStorage
-          }
         },
 
         updateCountdown() {
