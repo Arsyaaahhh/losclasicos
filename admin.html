@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin Simpel | losclasicos</title>
+
+  <!-- Favicon Emoji Inline -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+
+  <!-- Google Fonts: Bagel Fat One & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              yellow: '#FFE600',
+              pink: '#FF5C8A',
+              cyan: '#38D9A9',
+              lilac: '#B197FC',
+              orange: '#FF922B',
+              bg: '#FFFDF9',
+              dark: '#121212'
+            }
+          },
+          fontFamily: {
+            display: ['"Bagel Fat One"', 'cursive', 'sans-serif'],
+            body: ['"Space Grotesk"', 'sans-serif']
+          },
+          boxShadow: {
+            'brutal-sm': '2px 2px 0px #000000',
+            'brutal': '4px 4px 0px #000000',
+            'brutal-lg': '6px 6px 0px #000000',
+            'brutal-xl': '8px 8px 0px #000000'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Alpine.js 3 CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    .btn-brutal {
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-brutal:hover:not(:disabled) {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #000000;
+    }
+    .btn-brutal:active:not(:disabled) {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000000;
+    }
+  </style>
+</head>
+
+<body class="bg-brand-bg text-black font-body min-h-screen selection:bg-brand-yellow selection:text-black">
+
+  <script>
+    const ADMIN_CONFIG = {
+      BRAND_NAME: "losclasicos",
+      API_URL: "https://script.google.com/macros/s/AKfycbyd8odu1Myc05Q_pSci5cKZCUEXJqicNlfwbXYaAh1t9Jk2RZkGp8rU6AP4jGKa9by2lQ/exec"
+    };
+  </script>
+
+  <!-- ALPINE ROOT COMPONENT -->
+  <div x-data="simpleAdmin()" x-init="init()" class="min-h-screen flex flex-col">
+
+    <!-- ==========================================
+         VIEW 1: LOGIN SIMPEL
+         ========================================== -->
+    <div x-show="!isAuthenticated" class="flex-1 flex items-center justify-center p-4">
+      <div class="max-w-md w-full bg-white border-4 border-black rounded-3xl p-6 sm:p-8 shadow-brutal-xl">
+        
+        <div class="text-center mb-6">
+          <div class="w-14 h-14 bg-brand-yellow border-3 border-black rounded-2xl mx-auto flex items-center justify-center font-display text-2xl shadow-brutal mb-3 rotate-[-4deg]">
+            ⚡
+          </div>
+          <span class="bg-black text-white px-3 py-0.5 rounded font-bold text-xs uppercase tracking-wider">
+            ADMIN SIMPEL
+          </span>
+          <h1 class="font-display text-3xl uppercase text-black mt-2">
+            LOSCLASICOS
+          </h1>
+          <p class="text-xs text-gray-600 mt-1">
+            Atur countdown, foto QRIS, dan cek siapa saja yang pesan.
+          </p>
+        </div>
+
+        <div x-show="errorMessage" class="mb-4 bg-red-100 border-2 border-red-600 text-red-800 p-3 rounded-xl text-xs font-bold" x-cloak>
+          <span x-text="errorMessage"></span>
+        </div>
+
+        <form @submit.prevent="login()" class="space-y-4">
+          <div>
+            <label for="admin-token" class="block font-bold text-xs uppercase mb-1">
+              Password Admin
+            </label>
+            <input 
+              id="admin-token"
+              type="password" 
+              x-model="tokenInput"
+              required
+              placeholder="Masukkan password admin..."
+              class="w-full bg-brand-bg border-2 border-black rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-brutal-sm"
+              :disabled="isLoading"
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            :disabled="isLoading || !tokenInput.trim()"
+            class="w-full btn-brutal bg-brand-yellow text-black font-display text-lg py-3 px-6 rounded-xl border-3 border-black shadow-brutal flex items-center justify-center gap-2 disabled:opacity-50">
+            <span x-show="!isLoading">MASUK DASHBOARD</span>
+            <span x-show="isLoading">MEMVALIDASI...</span>
+            <span>👉</span>
+          </button>
+        </form>
+
+        <div class="mt-6 pt-4 border-t-2 border-gray-200 text-center">
+          <button 
+            type="button" 
+            @click="loadDemoMode()" 
+            class="text-xs font-bold text-gray-700 hover:text-black underline">
+            Masuk dengan Mode Demo (Tanpa Setup Server)
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 2: DASHBOARD SIMPEL
+         ========================================== -->
+    <div x-show="isAuthenticated" class="flex-1 flex flex-col" x-cloak>
+      
+      <!-- Top Navigation -->
+      <header class="bg-black text-white border-b-4 border-black px-4 py-3 sticky top-0 z-30 shadow-brutal">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 bg-brand-yellow text-black border-2 border-white rounded-lg flex items-center justify-center font-display text-base">
+              ⚡
+            </div>
+            <div>
+              <span class="font-display text-lg tracking-wide uppercase"><span class="text-brand-yellow">losclasicos</span> ADMIN</span>
+              <span class="hidden sm:inline text-[11px] text-gray-400 font-mono ml-2">• <span x-text="isDemo ? 'Mode Demo' : 'Online'"></span></span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-2">
+            <a href="index.html" target="_blank" class="bg-white hover:bg-brand-yellow text-black border-2 border-white px-3 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+              👁️ Lihat Web
+            </a>
+            <button type="button" @click="fetchOrders()" :disabled="isLoading" class="bg-brand-cyan hover:bg-cyan-300 text-black border-2 border-white px-3 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+              🔄 Refresh
+            </button>
+            <button type="button" @click="logout()" class="bg-red-500 hover:bg-red-600 text-white border-2 border-white px-3 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+              Keluar
+            </button>
+          </div>
+
+        </div>
+      </header>
+
+      <!-- Main Container -->
+      <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- Toast Feedback Banner -->
+        <div x-show="toastMessage" 
+             x-transition 
+             class="bg-brand-yellow border-3 border-black p-3 rounded-xl shadow-brutal flex items-center justify-between text-xs sm:text-sm font-bold"
+             x-cloak>
+          <span class="flex items-center gap-2">
+            <span>⚡</span>
+            <span x-text="toastMessage"></span>
+          </span>
+          <button @click="toastMessage = ''" class="font-display text-base">✕</button>
+        </div>
+
+        <!-- TAB NAVIGATION (Hanya 2 Tab: Pengaturan & Daftar Pesanan) -->
+        <div class="flex items-center gap-2 border-b-3 border-black pb-3">
+          <button 
+            type="button" 
+            @click="activeTab = 'orders'"
+            :class="activeTab === 'orders' ? 'bg-black text-white shadow-brutal' : 'bg-white text-black hover:bg-gray-100 shadow-brutal-sm'"
+            class="border-3 border-black px-4 py-2 rounded-xl font-display text-sm uppercase flex items-center gap-2 transition-all">
+            <span>👥</span>
+            <span>Siapa Saja yang Pesan</span>
+            <span class="bg-brand-yellow text-black px-2 py-0.2 rounded-md font-mono text-xs" x-text="orders.length"></span>
+          </button>
+
+          <button 
+            type="button" 
+            @click="activeTab = 'settings'"
+            :class="activeTab === 'settings' ? 'bg-black text-white shadow-brutal' : 'bg-white text-black hover:bg-gray-100 shadow-brutal-sm'"
+            class="border-3 border-black px-4 py-2 rounded-xl font-display text-sm uppercase flex items-center gap-2 transition-all">
+            <span>⚙️</span>
+            <span>Atur Countdown & Foto QRIS</span>
+          </button>
+        </div>
+
+        <!-- ====================================================
+             TAB 1: DAFTAR SIAPA SAJA YANG PESAN
+             ==================================================== -->
+        <div x-show="activeTab === 'orders'" class="space-y-5">
+          
+          <!-- Ringkasan 3 Metrik Simpel -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-white border-3 border-black rounded-2xl p-4 shadow-brutal flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-gray-600 uppercase">Total Pemesan</span>
+                <div class="font-display text-3xl text-black mt-1" x-text="orders.length">0</div>
+              </div>
+              <div class="w-12 h-12 bg-brand-yellow border-2 border-black rounded-xl flex items-center justify-center text-xl shadow-brutal-sm">
+                📦
+              </div>
+            </div>
+
+            <div class="bg-brand-pink/20 border-3 border-black rounded-2xl p-4 shadow-brutal flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-red-700 uppercase">Perlu Dicek</span>
+                <div class="font-display text-3xl text-red-600 mt-1" x-text="pendingCount">0</div>
+              </div>
+              <div class="w-12 h-12 bg-brand-pink border-2 border-black rounded-xl flex items-center justify-center text-xl shadow-brutal-sm">
+                ⏳
+              </div>
+            </div>
+
+            <div class="bg-brand-cyan/20 border-3 border-black rounded-2xl p-4 shadow-brutal flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-emerald-800 uppercase">Sudah Sah / Lunas</span>
+                <div class="font-display text-3xl text-emerald-700 mt-1" x-text="verifiedCount">0</div>
+              </div>
+              <div class="w-12 h-12 bg-brand-cyan border-2 border-black rounded-xl flex items-center justify-center text-xl shadow-brutal-sm">
+                ✓
+              </div>
+            </div>
+          </div>
+
+          <!-- Toolbar Pencarian & Export -->
+          <div class="bg-white border-3 border-black rounded-2xl p-3.5 shadow-brutal flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                x-model="searchQuery" 
+                placeholder="Cari nama, WhatsApp, atau kata-kata..." 
+                class="w-full bg-brand-bg border-2 border-black rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+              />
+            </div>
+
+            <div class="flex items-center gap-2">
+              <select 
+                x-model="statusFilter" 
+                class="bg-brand-bg border-2 border-black rounded-xl px-3 py-2 text-xs font-bold focus:outline-none">
+                <option value="">Semua Status</option>
+                <option value="Sudah Bayar">Belum Dicek</option>
+                <option value="Terverifikasi">Sah / Lunas</option>
+                <option value="Batal">Batal</option>
+              </select>
+
+              <button 
+                type="button" 
+                @click="exportCsv()" 
+                :disabled="filteredOrders.length === 0"
+                class="btn-brutal bg-brand-yellow text-black border-2 border-black px-3 py-2 rounded-xl text-xs font-bold shadow-brutal-sm whitespace-nowrap">
+                📥 Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- List Kartu Pemesan (Sangat Mudah Dibaca) -->
+          <div class="space-y-3">
+            
+            <div x-show="isLoading" class="bg-white border-3 border-black rounded-2xl p-10 text-center shadow-brutal">
+              <div class="text-3xl animate-spin mb-2">⚡</div>
+              <p class="font-bold text-xs uppercase tracking-wider text-gray-600">Memuat data pesanan...</p>
+            </div>
+
+            <div x-show="!isLoading && filteredOrders.length === 0" class="bg-white border-3 border-black rounded-2xl p-10 text-center shadow-brutal">
+              <div class="text-3xl mb-2">📭</div>
+              <p class="font-bold text-sm text-black">Belum ada pesanan ditemukan.</p>
+            </div>
+
+            <!-- List Card Pesanan -->
+            <template x-for="order in filteredOrders" :key="order.id">
+              <div class="bg-white border-3 border-black rounded-2xl p-4 sm:p-5 shadow-brutal hover:shadow-brutal-lg transition-all space-y-3">
+                
+                <!-- Header Kartu -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-black/10">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-bold text-xs bg-black text-white px-2 py-0.5 rounded" x-text="order.id"></span>
+                    <span class="text-xs text-gray-500 font-mono" x-text="formatDate(order.waktu)"></span>
+                  </div>
+
+                  <!-- Dropdown Status Cepat -->
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-gray-600">Status:</span>
+                    <select 
+                      :value="order.status"
+                      @change="updateStatus(order.id, $event.target.value)"
+                      :class="getStatusClass(order.status)"
+                      class="border-2 border-black rounded-lg px-2.5 py-1 text-xs font-bold focus:outline-none shadow-brutal-sm cursor-pointer">
+                      <option value="Sudah Bayar">Belum Dicek</option>
+                      <option value="Terverifikasi">Sah / Lunas</option>
+                      <option value="Batal">Batal</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Info Pelanggan & WA -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  
+                  <div class="sm:col-span-5">
+                    <h3 class="font-bold text-base text-black" x-text="order.nama"></h3>
+                    <div class="mt-1">
+                      <a :href="'https://wa.me/' + cleanPhone(order.wa)" target="_blank"
+                         class="inline-flex items-center gap-1 text-xs font-mono font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-400 px-2.5 py-1 rounded-lg transition-colors">
+                        <span>💬 Chat WhatsApp:</span>
+                        <span x-text="order.wa"></span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Kata-Kata Hari Ini -->
+                  <div class="sm:col-span-7 bg-brand-bg border-2 border-black rounded-xl p-3 shadow-brutal-sm">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">Kata-Kata Hari Ini:</span>
+                    <p class="text-xs sm:text-sm italic font-medium text-black leading-relaxed" x-text="'“' + order.kataKata + '”'"></p>
+                  </div>
+
+                </div>
+
+                <!-- Footer Kartu: Bukti Pembayaran -->
+                <div class="pt-2 border-t border-black/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div>
+                    <span class="text-gray-600 font-bold">Nominal:</span>
+                    <span class="font-mono font-bold text-black" x-text="formatRupiah(order.nominal)"></span>
+                  </div>
+
+                  <div>
+                    <template x-if="order.buktiUrl && order.buktiUrl !== '-'">
+                      <button 
+                        type="button"
+                        @click="viewProof(order.buktiUrl)"
+                        class="btn-brutal bg-brand-yellow hover:bg-yellow-300 border-2 border-black px-3 py-1 rounded-lg font-bold text-xs shadow-brutal-sm flex items-center gap-1">
+                        <span>📸</span>
+                        <span>Lihat Bukti Foto</span>
+                      </button>
+                    </template>
+                    <template x-if="!order.buktiUrl || order.buktiUrl === '-'">
+                      <span class="text-gray-400 font-mono text-[11px]">Tidak ada foto</span>
+                    </template>
+                  </div>
+                </div>
+
+              </div>
+            </template>
+
+          </div>
+
+        </div>
+
+        <!-- ====================================================
+             TAB 2: ATUR COUNTDOWN & FOTO QRIS
+             ==================================================== -->
+        <div x-show="activeTab === 'settings'" class="space-y-6">
+          
+          <div class="bg-white border-4 border-black rounded-3xl p-6 sm:p-8 shadow-brutal-lg space-y-6">
+            
+            <div>
+              <span class="bg-brand-pink text-black border-2 border-black px-3 py-0.5 rounded-full font-bold text-xs uppercase shadow-brutal-sm">
+                PENGATURAN TOKO
+              </span>
+              <h2 class="font-display text-2xl uppercase text-black mt-2">
+                ATUR COUNTDOWN & FOTO QRIS
+              </h2>
+              <p class="text-xs text-gray-600">
+                Ubah batas waktu pemesanan dan ganti gambar QRIS pembayaran dengan mudah.
+              </p>
+            </div>
+
+            <!-- 1. PENGATURAN COUNTDOWN -->
+            <div class="bg-brand-bg border-3 border-black rounded-2xl p-5 shadow-brutal space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">⏰</span>
+                <h3 class="font-bold text-sm uppercase text-black">1. Waktu Tutup Pemesanan (Countdown)</h3>
+              </div>
+
+              <div>
+                <label for="input-countdown-date" class="block text-xs font-bold text-gray-700 mb-1">
+                  Pilih Tanggal & Jam Tutup:
+                </label>
+                <input 
+                  id="input-countdown-date"
+                  type="datetime-local" 
+                  x-model="settings.countdownDate"
+                  class="w-full sm:w-auto bg-white border-2 border-black rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-brutal-sm"
+                />
+              </div>
+
+              <!-- Tombol Preset Cepat -->
+              <div>
+                <span class="text-[11px] font-bold text-gray-500 uppercase block mb-1.5">Preset Cepat:</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button type="button" @click="setPresetDays(1)" class="bg-white hover:bg-yellow-100 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    +1 Hari
+                  </button>
+                  <button type="button" @click="setPresetDays(3)" class="bg-white hover:bg-yellow-100 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    +3 Hari
+                  </button>
+                  <button type="button" @click="setPresetDays(7)" class="bg-white hover:bg-yellow-100 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    +7 Hari
+                  </button>
+                  <button type="button" @click="closeNow()" class="bg-red-100 hover:bg-red-200 text-red-800 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    Tutup Sekarang (0 Hari)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. PENGATURAN FOTO QRIS -->
+            <div class="bg-brand-bg border-3 border-black rounded-2xl p-5 shadow-brutal space-y-4">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">💳</span>
+                <h3 class="font-bold text-sm uppercase text-black">2. Foto QRIS Pembayaran</h3>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                
+                <!-- Kolom Input URL / Upload -->
+                <div class="md:col-span-8 space-y-3">
+                  <div>
+                    <label for="input-qris-url" class="block text-xs font-bold text-gray-700 mb-1">
+                      Link / URL Gambar QRIS:
+                    </label>
+                    <input 
+                      id="input-qris-url"
+                      type="url" 
+                      x-model="settings.qrisUrl"
+                      placeholder="https://contoh-link-gambar-qris.jpg"
+                      class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-brutal-sm"
+                    />
+                    <p class="text-[11px] text-gray-500 mt-1">
+                      Bisa pakai link foto dari Imgur, Google Drive, atau hosting foto lainnya.
+                    </p>
+                  </div>
+
+                  <div>
+                    <span class="text-xs font-bold text-gray-700 block mb-1">Atau Upload Gambar Langsung dari HP/Laptop:</span>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      @change="handleQrisUpload($event)"
+                      class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-2 file:border-black file:text-xs file:font-bold file:bg-brand-cyan hover:file:bg-cyan-300 cursor-pointer"
+                    />
+                  </div>
+
+                  <button 
+                    type="button" 
+                    @click="resetQrisDefault()" 
+                    class="text-[11px] font-bold text-gray-600 hover:text-black underline block">
+                    Gunakan QRIS Standar (Bawaan Web)
+                  </button>
+                </div>
+
+                <!-- Kolom Preview QRIS -->
+                <div class="md:col-span-4 text-center">
+                  <span class="text-[11px] font-bold text-gray-600 uppercase block mb-1">Preview QRIS:</span>
+                  <div class="w-36 h-36 bg-white border-2 border-black rounded-xl mx-auto flex items-center justify-center p-2 shadow-brutal-sm overflow-hidden">
+                    <template x-if="settings.qrisUrl && settings.qrisUrl.trim() !== ''">
+                      <img :src="settings.qrisUrl" alt="QRIS Preview" class="w-full h-full object-contain" />
+                    </template>
+                    <template x-if="!settings.qrisUrl || settings.qrisUrl.trim() === ''">
+                      <div class="text-center text-xs text-gray-400 font-bold">
+                        <span>⚡</span><br>Standar SVG
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Tombol Simpan Pengaturan -->
+            <div class="pt-2">
+              <button 
+                type="button"
+                @click="saveSettings()"
+                :disabled="isSaving"
+                class="w-full btn-brutal bg-[#20BF6B] text-white font-display text-lg py-3.5 px-6 rounded-2xl border-3 border-black shadow-brutal flex items-center justify-center gap-2">
+                <span x-show="!isSaving">SIMPAN PENGATURAN TOKO</span>
+                <span x-show="isSaving">MENYIMPAN...</span>
+                <span>💾</span>
+              </button>
+              <p class="text-center text-xs text-gray-500 mt-2">
+                Pengaturan langsung aktif di halaman pembeli (`index.html`).
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+      <!-- Footer -->
+      <footer class="bg-brand-bg border-t-2 border-black py-4 px-4 text-center text-xs text-gray-600 mt-auto font-mono">
+        losclasicos Admin Simpel &copy; 2026.
+      </footer>
+
+    </div>
+
+    <!-- MODAL FOTO BUKTI BAYAR -->
+    <div 
+      x-show="modalPhotoUrl" 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      x-cloak>
+      <div 
+        @click.outside="modalPhotoUrl = ''"
+        class="bg-white border-4 border-black rounded-3xl p-4 sm:p-6 max-w-lg w-full shadow-brutal-xl relative">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b-2 border-black">
+          <h4 class="font-display text-lg uppercase text-black">BUKTI PEMBAYARAN</h4>
+          <button @click="modalPhotoUrl = ''" class="font-display text-xl text-black hover:text-red-500">✕</button>
+        </div>
+        <div class="max-h-[70vh] overflow-y-auto flex items-center justify-center bg-brand-bg rounded-xl border-2 border-black p-2">
+          <img :src="modalPhotoUrl" alt="Foto Bukti Pembayaran" class="max-w-full h-auto object-contain rounded-lg" />
+        </div>
+        <div class="mt-4 flex items-center justify-between">
+          <a :href="modalPhotoUrl" target="_blank" class="btn-brutal bg-brand-yellow text-black border-2 border-black px-4 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm">
+            Buka Ukuran Asli
+          </a>
+          <button @click="modalPhotoUrl = ''" class="text-xs font-bold text-gray-600 uppercase">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function simpleAdmin() {
+      return {
+        tokenInput: '',
+        adminToken: '',
+        isAuthenticated: false,
+        isLoading: false,
+        isSaving: false,
+        isDemo: false,
+        errorMessage: '',
+        toastMessage: '',
+        activeTab: 'orders', // 'orders' atau 'settings'
+        searchQuery: '',
+        statusFilter: '',
+        modalPhotoUrl: '',
+
+        // Data Pesanan
+        orders: [],
+
+        // Pengaturan Toko (Countdown & QRIS)
+        settings: {
+          countdownDate: '',
+          qrisUrl: ''
+        },
+
+        init() {
+          // Siapkan tanggal default ISO untuk datetime-local
+          const savedCountdown = localStorage.getItem('losclasicos_countdown') || '2026-11-20T23:59:59';
+          this.settings.countdownDate = savedCountdown.slice(0, 16);
+          this.settings.qrisUrl = localStorage.getItem('losclasicos_qris') || '';
+        },
+
+        formatRupiah(num) {
+          return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+        },
+
+        formatDate(isoString) {
+          if (!isoString) return '-';
+          try {
+            return new Date(isoString).toLocaleDateString('id-ID', {
+              day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+          } catch(e) { return isoString; }
+        },
+
+        cleanPhone(phone) {
+          if (!phone) return '';
+          let clean = phone.replace(/[^0-9]/g, '');
+          if (clean.startsWith('0')) clean = '62' + clean.slice(1);
+          return clean;
+        },
+
+        getStatusClass(status) {
+          switch(status) {
+            case 'Sudah Bayar': return 'bg-brand-pink text-black';
+            case 'Terverifikasi': return 'bg-brand-cyan text-black';
+            case 'Batal': return 'bg-gray-300 text-gray-700';
+            default: return 'bg-white text-black';
+          }
+        },
+
+        async login() {
+          const token = this.tokenInput.trim();
+          if (!token) return;
+          this.isLoading = true;
+          this.errorMessage = '';
+
+          try {
+            if (ADMIN_CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) {
+              throw new Error('API_URL belum diganti di ADMIN_CONFIG! Gunakan Mode Demo di bawah.');
+            }
+            const res = await fetch(`${ADMIN_CONFIG.API_URL}?action=list&token=${encodeURIComponent(token)}`);
+            const json = await res.json();
+            if (json.status === 'success') {
+              this.adminToken = token;
+              this.orders = json.data || [];
+              this.isAuthenticated = true;
+              this.isDemo = false;
+              this.loadRemoteSettings();
+            } else {
+              this.errorMessage = json.message || 'Password salah!';
+            }
+          } catch(err) {
+            this.errorMessage = err.message || 'Gagal koneksi ke server.';
+          } finally {
+            this.isLoading = false;
+          }
+        },
+
+        loadDemoMode() {
+          this.adminToken = 'DEMO_TOKEN';
+          this.isAuthenticated = true;
+          this.isDemo = true;
+          this.orders = [
+            {
+              id: "LC-1021",
+              waktu: new Date(Date.now() - 3600000 * 1).toISOString(),
+              nama: "Nadia Larasati",
+              wa: "081298765432",
+              kataKata: "Pelan-pelan asal konsisten, karya yang baik butuh waktu.",
+              nominal: 25000,
+              buktiUrl: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
+              status: "Sudah Bayar"
+            },
+            {
+              id: "LC-1022",
+              waktu: new Date(Date.now() - 3600000 * 3).toISOString(),
+              nama: "Rian Pratama",
+              wa: "085712345678",
+              kataKata: "Hari ini harus lebih keren dari kemarin, gas terus!",
+              nominal: 25000,
+              buktiUrl: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400",
+              status: "Terverifikasi"
+            }
+          ];
+          this.showToast('Masuk dengan Data Demo.');
+        },
+
+        logout() {
+          this.isAuthenticated = false;
+          this.tokenInput = '';
+          this.adminToken = '';
+          this.orders = [];
+        },
+
+        async fetchOrders() {
+          if (this.isDemo) {
+            this.showToast('Data demo berhasil direfresh!');
+            return;
+          }
+          this.isLoading = true;
+          try {
+            const res = await fetch(`${ADMIN_CONFIG.API_URL}?action=list&token=${encodeURIComponent(this.adminToken)}`);
+            const json = await res.json();
+            if (json.status === 'success') {
+              this.orders = json.data || [];
+              this.showToast('Data pesanan berhasil diperbarui!');
+            }
+          } catch(err) {
+            alert('Koneksi terputus saat mengambil data!');
+          } finally {
+            this.isLoading = false;
+          }
+        },
+
+        async updateStatus(orderId, newStatus) {
+          const order = this.orders.find(o => o.id === orderId);
+          if (!order) return;
+          const oldStatus = order.status;
+          order.status = newStatus;
+
+          if (this.isDemo) {
+            this.showToast(`Status ${orderId} diubah ke ${newStatus}`);
+            return;
+          }
+
+          try {
+            const url = `${ADMIN_CONFIG.API_URL}?action=update&id=${encodeURIComponent(orderId)}&status=${encodeURIComponent(newStatus)}&token=${encodeURIComponent(this.adminToken)}`;
+            const res = await fetch(url);
+            const json = await res.json();
+            if (json.status === 'success') {
+              this.showToast(`Status ${orderId} berhasil diubah!`);
+            } else {
+              order.status = oldStatus;
+              alert('Gagal update: ' + json.message);
+            }
+          } catch(err) {
+            order.status = oldStatus;
+            alert('Koneksi gagal saat update status!');
+          }
+        },
+
+        viewProof(url) {
+          this.modalPhotoUrl = url;
+        },
+
+        // Helper Preset Countdown
+        setPresetDays(days) {
+          const target = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+          this.settings.countdownDate = target.toISOString().slice(0, 16);
+          this.showToast(`Waktu countdown diatur ke +${days} hari!`);
+        },
+
+        closeNow() {
+          const past = new Date(Date.now() - 60000);
+          this.settings.countdownDate = past.toISOString().slice(0, 16);
+          this.showToast('Pemesanan telah ditutup!');
+        },
+
+        // Upload Foto QRIS Lokal
+        handleQrisUpload(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.settings.qrisUrl = e.target.result;
+            this.showToast('Foto QRIS berhasil dipilih!');
+          };
+          reader.readAsDataURL(file);
+        },
+
+        resetQrisDefault() {
+          this.settings.qrisUrl = '';
+          this.showToast('Kembali ke QRIS standar bawaan web.');
+        },
+
+        // Simpan Pengaturan (Countdown & QRIS)
+        async saveSettings() {
+          this.isSaving = true;
+
+          // Simpan ke LocalStorage agar instan aktif di browser ini
+          if (this.settings.countdownDate) {
+            localStorage.setItem('losclasicos_countdown', this.settings.countdownDate + ':00');
+          }
+          localStorage.setItem('losclasicos_qris', this.settings.qrisUrl || '');
+
+          // Simpan ke Google Apps Script jika online
+          if (!this.isDemo && ADMIN_CONFIG.API_URL && !ADMIN_CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) {
+            try {
+              const url = `${ADMIN_CONFIG.API_URL}?action=save_settings&countdownDate=${encodeURIComponent(this.settings.countdownDate + ':00')}&qrisUrl=${encodeURIComponent(this.settings.qrisUrl)}&token=${encodeURIComponent(this.adminToken)}`;
+              await fetch(url);
+            } catch(e) {
+              console.warn('Sync server gagal, tersimpan lokal:', e);
+            }
+          }
+
+          this.isSaving = false;
+          this.showToast('Pengaturan countdown & QRIS berhasil disimpan! ✅');
+        },
+
+        async loadRemoteSettings() {
+          if (!ADMIN_CONFIG.API_URL || ADMIN_CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) return;
+          try {
+            const res = await fetch(`${ADMIN_CONFIG.API_URL}?action=get_settings`);
+            const json = await res.json();
+            if (json.status === 'success') {
+              if (json.countdownDate) {
+                this.settings.countdownDate = json.countdownDate.slice(0, 16);
+                localStorage.setItem('losclasicos_countdown', json.countdownDate);
+              }
+              if (json.qrisUrl !== undefined) {
+                this.settings.qrisUrl = json.qrisUrl;
+                localStorage.setItem('losclasicos_qris', json.qrisUrl);
+              }
+            }
+          } catch(e) {}
+        },
+
+        showToast(msg) {
+          this.toastMessage = msg;
+          setTimeout(() => { if (this.toastMessage === msg) this.toastMessage = ''; }, 3500);
+        },
+
+        get filteredOrders() {
+          let list = [...this.orders];
+          if (this.searchQuery.trim()) {
+            const q = this.searchQuery.toLowerCase().trim();
+            list = list.filter(o => 
+              (o.id && o.id.toLowerCase().includes(q)) ||
+              (o.nama && o.nama.toLowerCase().includes(q)) ||
+              (o.wa && o.wa.includes(q)) ||
+              (o.kataKata && o.kataKata.toLowerCase().includes(q))
+            );
+          }
+          if (this.statusFilter) list = list.filter(o => o.status === this.statusFilter);
+          list.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+          return list;
+        },
+
+        get pendingCount() {
+          return this.orders.filter(o => o.status === 'Sudah Bayar').length;
+        },
+
+        get verifiedCount() {
+          return this.orders.filter(o => o.status === 'Terverifikasi').length;
+        },
+
+        exportCsv() {
+          if (this.filteredOrders.length === 0) return;
+          const headers = ["ID Transaksi", "Waktu", "Nama Pelanggan", "WhatsApp", "Kata-Kata Hari Ini", "Nominal", "Bukti Bayar URL", "Status"];
+          const rows = this.filteredOrders.map(o => [
+            o.id || '',
+            o.waktu || '',
+            `"${(o.nama || '').replace(/"/g, '""')}"`,
+            `"${(o.wa || '').replace(/"/g, '""')}"`,
+            `"${(o.kataKata || '').replace(/"/g, '""')}"`,
+            o.nominal || 0,
+            `"${(o.buktiUrl || '').replace(/"/g, '""')}"`,
+            o.status || ''
+          ]);
+          const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.setAttribute('href', url);
+          link.setAttribute('download', `pesanan-losclasicos-${new Date().toISOString().slice(0, 10)}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      };
+    }
+  </script>
+</body>
+</html>
