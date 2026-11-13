@@ -381,51 +381,95 @@
               </p>
             </div>
 
-            <!-- INFORMASI PENGATURAN KODE -->
-            <div class="bg-brand-yellow/40 border-2 border-black rounded-2xl p-4 shadow-brutal-sm flex items-start gap-3">
-              <span class="text-2xl leading-none">💡</span>
+            <!-- INFORMASI STATUS SINKRONISASI -->
+            <div class="bg-brand-cyan/20 border-3 border-black rounded-2xl p-4 shadow-brutal-sm flex items-start gap-3">
+              <span class="text-2xl leading-none">⚡</span>
               <div class="text-xs space-y-1">
-                <div class="font-bold text-black uppercase tracking-wide">Pengaturan Langsung dari Kode (Aktif):</div>
+                <div class="font-bold text-black uppercase tracking-wide">Pengaturan Deadline Terhubung Otomatis:</div>
                 <p class="text-gray-800 leading-relaxed">
-                  Harga, Waktu Countdown, dan Gambar QRIS di halaman depan ditentukan langsung dari variabel <code class="bg-white px-1.5 py-0.5 rounded border border-black font-mono font-bold">CONFIG</code> pada file <code class="bg-white px-1.5 py-0.5 rounded border border-black font-mono font-bold">index.html</code>. Fitur form di dashboard ini tetap disimpan lengkap sebagai panel cadangan.
+                  Batas waktu deadline pemesanan yang Anda atur dan simpan di sini akan <strong>langsung tersimpan di server database Google Apps Script</strong> dan otomatis mengupdate countdown di halaman utama pembeli (<code class="bg-white px-1.5 py-0.5 rounded border border-black font-mono font-bold">index.html</code>) secara instan tanpa perlu ubah kode lagi!
                 </p>
               </div>
             </div>
 
             <!-- 1. PENGATURAN COUNTDOWN -->
-            <div class="bg-brand-bg border-3 border-black rounded-2xl p-5 shadow-brutal space-y-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">⏰</span>
-                <h3 class="font-bold text-sm uppercase text-black">1. Waktu Tutup Pemesanan (Countdown)</h3>
+            <div class="bg-brand-bg border-3 border-black rounded-2xl p-5 shadow-brutal space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">⏰</span>
+                  <h3 class="font-bold text-sm uppercase text-black">1. Waktu Tutup Pemesanan (Deadline)</h3>
+                </div>
+                
+                <!-- Status Deadline Saat Ini -->
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-bold text-gray-600">Status Web:</span>
+                  <template x-if="isDeadlineOpen">
+                    <span class="inline-flex items-center gap-1.5 bg-brand-cyan text-black border-2 border-black px-2.5 py-0.5 rounded-full text-xs font-bold shadow-brutal-sm">
+                      <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+                      <span>Terbuka (Countdown Aktif)</span>
+                    </span>
+                  </template>
+                  <template x-if="!isDeadlineOpen">
+                    <span class="inline-flex items-center gap-1.5 bg-brand-pink text-black border-2 border-black px-2.5 py-0.5 rounded-full text-xs font-bold shadow-brutal-sm">
+                      <span>🔒</span>
+                      <span>Tutup (Waktu Habis)</span>
+                    </span>
+                  </template>
+                </div>
               </div>
 
-              <div>
-                <label for="input-countdown-date" class="block text-xs font-bold text-gray-700 mb-1">
-                  Pilih Tanggal & Jam Tutup:
-                </label>
-                <input 
-                  id="input-countdown-date"
-                  type="datetime-local" 
-                  x-model="settings.countdownDate"
-                  class="w-full sm:w-auto bg-white border-2 border-black rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-brutal-sm"
-                />
+              <!-- Preview Tanggal Aktif -->
+              <div class="bg-white border-2 border-black rounded-xl p-3 shadow-brutal-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-bold text-gray-500 uppercase block">Deadline yang sedang dipilih:</span>
+                  <div class="font-mono font-bold text-sm sm:text-base text-black" x-text="formatDatePreview(settings.countdownDate)">
+                    -
+                  </div>
+                </div>
+                <div class="text-xs font-mono font-bold text-gray-700 bg-brand-bg border border-black/20 px-2.5 py-1 rounded-lg" x-text="deadlineRemainingText">
+                </div>
+              </div>
+
+              <!-- Input Pemilihan Waktu -->
+              <div class="flex flex-wrap items-end gap-3">
+                <div class="flex-1 min-w-[240px]">
+                  <label for="input-countdown-date" class="block text-xs font-bold text-gray-700 mb-1">
+                    Pilih Tanggal & Jam Tutup:
+                  </label>
+                  <input 
+                    id="input-countdown-date"
+                    type="datetime-local" 
+                    x-model="settings.countdownDate"
+                    class="w-full bg-white border-2 border-black rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-brutal-sm"
+                  />
+                </div>
+
+                <!-- Tombol Simpan Cepat Deadline -->
+                <button 
+                  type="button" 
+                  @click="saveDeadlineOnly()" 
+                  :disabled="isSaving" 
+                  class="btn-brutal bg-brand-yellow hover:bg-yellow-300 text-black border-2 border-black px-4 py-2.5 rounded-xl font-bold text-xs shadow-brutal-sm flex items-center gap-2">
+                  <span x-show="!isSaving">💾 Simpan Deadline</span>
+                  <span x-show="isSaving">Menyimpan...</span>
+                </button>
               </div>
 
               <!-- Tombol Preset Cepat -->
               <div>
                 <span class="text-[11px] font-bold text-gray-500 uppercase block mb-1.5">Preset Cepat:</span>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" @click="setPresetDays(1)" class="bg-white hover:bg-yellow-100 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
-                    +1 Hari
+                  <button type="button" @click="setPresetDays(1)" class="btn-brutal bg-white hover:bg-brand-yellow border-2 border-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    +1 Hari (23:59)
                   </button>
-                  <button type="button" @click="setPresetDays(3)" class="bg-white hover:bg-yellow-100 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
-                    +3 Hari
+                  <button type="button" @click="setPresetDays(3)" class="btn-brutal bg-white hover:bg-brand-yellow border-2 border-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    +3 Hari (23:59)
                   </button>
-                  <button type="button" @click="setPresetDays(7)" class="bg-white hover:bg-yellow-100 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
-                    +7 Hari
+                  <button type="button" @click="setPresetDays(7)" class="btn-brutal bg-white hover:bg-brand-yellow border-2 border-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    +7 Hari (23:59)
                   </button>
-                  <button type="button" @click="closeNow()" class="bg-red-100 hover:bg-red-200 text-red-800 border-2 border-black px-2.5 py-1 rounded-lg text-xs font-bold shadow-brutal-sm">
-                    Tutup Sekarang (0 Hari)
+                  <button type="button" @click="closeNow()" class="btn-brutal bg-red-100 hover:bg-red-200 text-red-800 border-2 border-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm">
+                    🔒 Tutup Sekarang
                   </button>
                 </div>
               </div>
@@ -627,11 +671,66 @@
         },
 
         init() {
-          // Siapkan tanggal default ISO untuk datetime-local
-          const savedCountdown = localStorage.getItem('losclasicos_countdown') || '2026-11-20T23:59:59';
-          this.settings.countdownDate = savedCountdown.slice(0, 16);
+          // Siapkan tanggal dari localStorage jika ada
+          const savedCountdown = localStorage.getItem('losclasicos_countdown');
+          if (savedCountdown) {
+            this.settings.countdownDate = savedCountdown.slice(0, 16);
+          } else {
+            // Default 3 hari ke depan jam 23:59
+            const defTarget = new Date();
+            defTarget.setDate(defTarget.getDate() + 3);
+            defTarget.setHours(23, 59, 0, 0);
+            this.settings.countdownDate = this.formatToLocalDateTimeString(defTarget);
+          }
           this.settings.qrisUrl = localStorage.getItem('losclasicos_qris') || '';
-          this.settings.nominal = Number(localStorage.getItem('losclasicos_nominal')) || 25000;
+          this.settings.nominal = Number(localStorage.getItem('losclasicos_nominal')) || 15000;
+
+          // Tarik pengaturan server GAS terbaru secara publik
+          this.loadRemoteSettings();
+
+          // Sesi login otomatis jika ada token tersimpan
+          const savedToken = sessionStorage.getItem('losclasicos_admin_token');
+          if (savedToken) {
+            this.tokenInput = savedToken;
+            this.login();
+          }
+        },
+
+        formatToLocalDateTimeString(d) {
+          if (!d || isNaN(d.getTime())) return '';
+          const pad = (n) => String(n).padStart(2, '0');
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        },
+
+        formatDatePreview(val) {
+          if (!val) return 'Belum dipilih';
+          try {
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return val;
+            return d.toLocaleDateString('id-ID', {
+              weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            }) + ' WIB';
+          } catch(e) { return val; }
+        },
+
+        get isDeadlineOpen() {
+          if (!this.settings.countdownDate) return false;
+          try {
+            return new Date(this.settings.countdownDate).getTime() > Date.now();
+          } catch(e) { return false; }
+        },
+
+        get deadlineRemainingText() {
+          if (!this.settings.countdownDate) return '';
+          try {
+            const diff = new Date(this.settings.countdownDate).getTime() - Date.now();
+            if (diff <= 0) return 'Waktu telah berakhir';
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            return `Sisa: ${d} hari ${h} jam ${m} mnt`;
+          } catch(e) { return ''; }
         },
 
         formatRupiah(num) {
@@ -674,11 +773,13 @@
             const json = await res.json();
             if (json.status === 'success') {
               this.adminToken = token;
+              sessionStorage.setItem('losclasicos_admin_token', token);
               this.orders = json.data || [];
               this.isAuthenticated = true;
               this.loadRemoteSettings();
             } else {
               this.errorMessage = json.message || 'Password salah!';
+              sessionStorage.removeItem('losclasicos_admin_token');
             }
           } catch(err) {
             this.errorMessage = err.message || 'Gagal koneksi ke server Google Apps Script.';
@@ -688,6 +789,7 @@
         },
 
         logout() {
+          sessionStorage.removeItem('losclasicos_admin_token');
           this.isAuthenticated = false;
           this.tokenInput = '';
           this.adminToken = '';
@@ -747,15 +849,59 @@
 
         // Helper Preset Countdown
         setPresetDays(days) {
-          const target = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-          this.settings.countdownDate = target.toISOString().slice(0, 16);
-          this.showToast(`Waktu countdown diatur ke +${days} hari!`);
+          const target = new Date();
+          target.setDate(target.getDate() + days);
+          target.setHours(23, 59, 0, 0);
+          this.settings.countdownDate = this.formatToLocalDateTimeString(target);
+          this.showToast(`Waktu deadline diatur ke +${days} hari (pukul 23:59 WIB)! Klik "Simpan Deadline" untuk menerapkan.`);
         },
 
         closeNow() {
           const past = new Date(Date.now() - 60000);
-          this.settings.countdownDate = past.toISOString().slice(0, 16);
-          this.showToast('Pemesanan telah ditutup!');
+          this.settings.countdownDate = this.formatToLocalDateTimeString(past);
+          this.showToast('Deadline diatur ke waktu lalu (Tutup Sekarang)! Klik "Simpan Deadline" untuk menerapkan.');
+        },
+
+        cleanCountdownString(dateStr) {
+          if (!dateStr) return '';
+          let clean = dateStr.trim();
+          if (clean.length === 16) {
+            clean += ':00';
+          }
+          return clean;
+        },
+
+        // Simpan hanya deadline saja secara cepat
+        async saveDeadlineOnly() {
+          if (!this.settings.countdownDate) {
+            alert('Mohon pilih tanggal dan jam deadline terlebih dahulu!');
+            return;
+          }
+          const formattedDate = this.cleanCountdownString(this.settings.countdownDate);
+          this.isSaving = true;
+
+          // Simpan lokal agar langsung aktif
+          localStorage.setItem('losclasicos_countdown', formattedDate);
+
+          // Simpan ke Google Apps Script jika online
+          if (ADMIN_CONFIG.API_URL && !ADMIN_CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) {
+            try {
+              const url = `${ADMIN_CONFIG.API_URL}?action=save_settings&countdownDate=${encodeURIComponent(formattedDate)}&token=${encodeURIComponent(this.adminToken)}`;
+              const res = await fetch(url);
+              const json = await res.json();
+              if (json.status === 'success') {
+                this.showToast('✅ Waktu deadline berhasil disimpan dan langsung aktif di web!');
+              } else {
+                alert('Gagal menyimpan ke server: ' + (json.message || 'Periksa password admin'));
+              }
+            } catch(e) {
+              console.warn('Sync deadline ke server gagal:', e);
+              this.showToast('⚠️ Gagal terhubung ke Google Apps Script, deadline tersimpan di browser lokal.');
+            }
+          } else {
+            this.showToast('✅ Deadline tersimpan di browser lokal!');
+          }
+          this.isSaving = false;
         },
 
         // Upload Foto QRIS Lokal
@@ -775,29 +921,38 @@
           this.showToast('Kembali ke QRIS standar bawaan web.');
         },
 
-        // Simpan Pengaturan (Countdown, QRIS & Harga)
+        // Simpan Semua Pengaturan (Countdown, QRIS & Harga)
         async saveSettings() {
           this.isSaving = true;
+          const formattedDate = this.cleanCountdownString(this.settings.countdownDate);
 
           // Simpan ke LocalStorage agar instan aktif di browser ini
-          if (this.settings.countdownDate) {
-            localStorage.setItem('losclasicos_countdown', this.settings.countdownDate + ':00');
+          if (formattedDate) {
+            localStorage.setItem('losclasicos_countdown', formattedDate);
           }
           localStorage.setItem('losclasicos_qris', this.settings.qrisUrl || '');
-          localStorage.setItem('losclasicos_nominal', this.settings.nominal || 25000);
+          localStorage.setItem('losclasicos_nominal', this.settings.nominal || 15000);
 
           // Simpan ke Google Apps Script jika online
           if (ADMIN_CONFIG.API_URL && !ADMIN_CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) {
             try {
-              const url = `${ADMIN_CONFIG.API_URL}?action=save_settings&countdownDate=${encodeURIComponent(this.settings.countdownDate + ':00')}&qrisUrl=${encodeURIComponent(this.settings.qrisUrl)}&nominal=${encodeURIComponent(this.settings.nominal)}&token=${encodeURIComponent(this.adminToken)}`;
-              await fetch(url);
+              const url = `${ADMIN_CONFIG.API_URL}?action=save_settings&countdownDate=${encodeURIComponent(formattedDate)}&qrisUrl=${encodeURIComponent(this.settings.qrisUrl)}&nominal=${encodeURIComponent(this.settings.nominal)}&token=${encodeURIComponent(this.adminToken)}`;
+              const res = await fetch(url);
+              const json = await res.json();
+              if (json.status === 'success') {
+                this.showToast('✅ Pengaturan deadline, QRIS & harga berhasil disimpan ke server!');
+              } else {
+                alert('Gagal menyimpan ke server: ' + (json.message || 'Periksa password admin'));
+              }
             } catch(e) {
               console.warn('Sync server gagal, tersimpan lokal:', e);
+              this.showToast('⚠️ Gagal terhubung ke server, pengaturan tersimpan di browser lokal.');
             }
+          } else {
+            this.showToast('✅ Pengaturan berhasil disimpan secara lokal!');
           }
 
           this.isSaving = false;
-          this.showToast('Pengaturan countdown, QRIS & harga berhasil disimpan! ✅');
         },
 
         async loadRemoteSettings() {
@@ -806,11 +961,11 @@
             const res = await fetch(`${ADMIN_CONFIG.API_URL}?action=get_settings`);
             const json = await res.json();
             if (json.status === 'success') {
-              if (json.countdownDate) {
+              if (json.countdownDate && json.countdownDate.trim() !== '') {
                 this.settings.countdownDate = json.countdownDate.slice(0, 16);
                 localStorage.setItem('losclasicos_countdown', json.countdownDate);
               }
-              if (json.qrisUrl !== undefined) {
+              if (json.qrisUrl !== undefined && json.qrisUrl.trim() !== '') {
                 this.settings.qrisUrl = json.qrisUrl;
                 localStorage.setItem('losclasicos_qris', json.qrisUrl);
               }

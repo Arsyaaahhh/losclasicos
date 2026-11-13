@@ -16,27 +16,38 @@ d:/pesen/
 
 ---
 
-## ⚡ CARA UBAH HARGA, COUNTDOWN & QRIS LEWAT KODE (`index.html`)
+## ⚡ CARA ATUR DEADLINE WAKTU PEMESANAN DARI PANEL ADMIN (`admin.html`)
 
-Buka file [index.html](file:///d:/pesen/index.html), pada bagian paling atas (baris 80-100) terdapat blok variabel `CONFIG`:
+Anda sekarang bisa mengatur waktu deadline kapan saja secara langsung tanpa perlu ubah kode dan commit berulang kali:
+
+1. Buka halaman admin: `admin.html`
+2. Masukkan password admin.
+3. Masuk ke tab **⚙️ Atur Countdown, QRIS & Harga**.
+4. Di bagian **1. Waktu Tutup Pemesanan (Deadline)**:
+   - Pilih tanggal & jam tutup sesuai keinginan, atau gunakan tombol preset cepat (**+1 Hari**, **+3 Hari**, **+7 Hari**, atau **Tutup Sekarang**).
+   - Klik **💾 Simpan Deadline** (atau tombol **Simpan Pengaturan Toko** di bawah).
+5. Perubahan akan langsung tersimpan di server Google Apps Script dan otomatis mengupdate countdown di halaman pembeli (`index.html`).
+
+---
+
+## 🛠️ PENGATURAN CADANGAN LEWAT KODE (`index.html`)
+
+Jika server Google Apps Script belum diset atau offline, batas waktu dan nominal bawaan tetap menggunakan variabel `CONFIG` pada [index.html](file:///d:/pesen/index.html):
 
 ```javascript
 const CONFIG = {
   // 1. HARGA & NOMINAL PEMBAYARAN
-  NOMINAL_DEFAULT: 25000,                       // Ubah nominal di sini (contoh: 25000 = Rp 25.000)
+  NOMINAL_DEFAULT: 15000,                       // Nominal cadangan
   NOMINAL_LABEL: "Paket Sticker & Custom Quotes",
 
   // 2. WAKTU TUTUP PRE-ORDER (COUNTDOWN)
   // Format: YYYY-MM-DDTHH:mm:ss
-  PO_CLOSE_DATE: "2026-11-20T23:59:59",
+  PO_CLOSE_DATE: "2026-11-20T23:59:00",
 
   // 3. FOTO / GAMBAR QRIS PEMBAYARAN
-  // Bisa file lokal di folder yang sama (contoh: "qris.jpeg", "qris.jpg", "qris.png")
-  // atau link gambar online ("https://...")
   QRIS_IMAGE_URL: "qris.jpeg", 
 };
 ```
-Cukup simpan file `index.html` dan refresh browser, perubahan langsung aktif!
 
 ---
 

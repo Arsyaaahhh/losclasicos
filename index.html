@@ -85,7 +85,8 @@
 
       // 2. WAKTU TUTUP PRE-ORDER (COUNTDOWN)
       // Format: YYYY-MM-DDTHH:mm:ss (Tahun-Bulan-TanggalTHour:Menit:Detik)
-      PO_CLOSE_DATE: "2026-11-02T23:59:00",
+      // Catatan: Waktu ini juga otomatis terupdate secara realtime dari Panel Admin (admin.html)
+      PO_CLOSE_DATE: "2026-11-20T23:59:00",
 
       // 3. FOTO / GAMBAR QRIS PEMBAYARAN
       // Bisa file gambar di folder yang sama (contoh: "qris.jpeg", "qris.jpg", "qris.png")
@@ -662,16 +663,63 @@
         whatsappReceiptUrl: '',
 
         async init() {
-          // Harga, Countdown, dan Foto QRIS sepenuhnya dikontrol lewat KODE CONFIG di atas
+          // 1. Muat awal dari CONFIG atau localStorage agar tampilan langsung muncul instan
           this.activeQrisUrl = CONFIG.QRIS_IMAGE_URL;
-          this.targetCloseDate = CONFIG.PO_CLOSE_DATE;
-          this.activeNominal = Number(CONFIG.NOMINAL_DEFAULT) || 25000;
+          this.targetCloseDate = localStorage.getItem('losclasicos_countdown') || CONFIG.PO_CLOSE_DATE;
+          this.activeNominal = Number(localStorage.getItem('losclasicos_nominal')) || Number(CONFIG.NOMINAL_DEFAULT) || 15000;
 
           // Jalankan countdown timer per detik
           this.updateCountdown();
           setInterval(() => {
             this.updateCountdown();
           }, 1000);
+
+          // 2. Tarik batas waktu deadline dan harga terbaru dari Server GAS
+          await this.fetchRemoteSettings();
+
+          // 3. Dengarkan event localStorage agar instan sinkron jika diubah di tab admin pada browser yang sama
+          window.addEventListener('storage', (e) => {
+            if (e.key === 'losclasicos_countdown' && e.newValue) {
+              this.targetCloseDate = e.newValue;
+              this.updateCountdown();
+            }
+            if (e.key === 'losclasicos_nominal' && e.newValue) {
+              this.activeNominal = Number(e.newValue);
+            }
+          });
+
+          // 4. Polling sinkronisasi tiap 60 detik & saat tab browser pengunjung kembali aktif
+          setInterval(() => {
+            this.fetchRemoteSettings();
+          }, 60000);
+
+          window.addEventListener('focus', () => {
+            this.fetchRemoteSettings();
+          });
+        },
+
+        async fetchRemoteSettings() {
+          if (!CONFIG.API_URL || CONFIG.API_URL.includes('SAMPLE_YOUR_SCRIPT_ID')) return;
+          try {
+            const res = await fetch(`${CONFIG.API_URL}?action=get_settings`);
+            const json = await res.json();
+            if (json && json.status === 'success') {
+              if (json.countdownDate && json.countdownDate.trim() !== '') {
+                const serverDate = json.countdownDate.trim();
+                if (this.targetCloseDate !== serverDate) {
+                  this.targetCloseDate = serverDate;
+                  localStorage.setItem('losclasicos_countdown', serverDate);
+                  this.updateCountdown();
+                }
+              }
+              if (json.nominal) {
+                this.activeNominal = Number(json.nominal);
+                localStorage.setItem('losclasicos_nominal', this.activeNominal);
+              }
+            }
+          } catch(e) {
+            console.warn('Gagal memuat pengaturan deadline dari server:', e);
+          }
         },
 
         updateCountdown() {
